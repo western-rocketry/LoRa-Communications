@@ -58,3 +58,4 @@ AcX: ###
 AcY: ###
 AcZ: ###
 ```
+The serial monitor will be the main communication system between the LoRa system and the Ground team.
