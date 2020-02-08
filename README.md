@@ -1,5 +1,5 @@
 # Low Frequency Radio (LoRa) Communication System
-A secondary communication system between the ground and flight system to provide sensor data from the rocket to the ground. The systems are capable of a full-duplex communication system; however only the flight module will be sending data and the ground module will be recieving data.
+A secondary communication system between the ground and flight system to provide sensor data from the rocket to the ground. The systems are capable of a full-duplex communication system, and will be implementing commands in the future.
 
 ## Flight Module
 Parses data from thermocouples and i2c sensor modules and sends them over LoRa to the ground. Creates the packet format, which is still to be determined, but as of currently, exists as a string. Packets can not exceed 255 bytes in length, so more than 1 type of frame may be designed to send other module information. Currently, the available sensor data is as follows:
