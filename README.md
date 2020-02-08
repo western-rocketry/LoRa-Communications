@@ -41,6 +41,7 @@ GyZ ###
 AcX ###
 AcY ###
 AcZ ###
+...
 ```
 
 ### Checksum
@@ -58,4 +59,72 @@ AcX: ###
 AcY: ###
 AcZ: ###
 ```
-The serial monitor will be the main communication system between the LoRa system and the Ground team.
+The serial monitor will be the main communication system between the LoRa system and the Ground team. Below are some examples of what data will be outputted to the Serial Monitor:
+```
+Mode Prep
+Time ###
+Acc/Gryo OK
+Alt/Pressure OK
+GPS OK
+TEMP1 OK
+TEMP2 OK
+TEMP3 OK
+TEMP4 ERROR
+RSSI ###
+SNR ###
+```
+Note, Launch and Normal will have the same output
+```
+Mode Launch
+Time ###
+GyX ###
+GyY ###
+GyZ ###
+AcX ###
+AcY ###
+AcZ ###
+ALT ###
+PRESS ###
+TEMP ###
+GPSAlt ###
+GPSLat ###
+GPSLong ###
+GPSSpeed ###
+GPSAngle ###
+GPSDoP ###
+GPSFails ###
+TEMP1 ###
+TEMP2 ###
+TEMP3 ###
+TEMP4 ###
+RSSI ###
+SNR ###
+```
+```
+Mode Alert
+Time ###
+Temp1 exceeded ### degrees 
+RSSI ###
+SNR ###
+```
+```
+Mode Alert
+Time ###
+### packets have been lost
+RSSI ###
+SNR ###
+```
+```
+Mode Alert
+Time ###
+Checksum failed on ### data values
+RSSI ###
+SNR ###
+```
+```
+Mode Alert
+Time ###
+Gyro pulled irregular data, check orientation
+RSSI ###
+SNR ###
+```
