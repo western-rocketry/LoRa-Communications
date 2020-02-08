@@ -1,4 +1,4 @@
-### Low Frequency Radio (LoRa) Communication System
+## Low Frequency Radio (LoRa) Communication System
 A secondary communication system between the ground and flight system to provide sensor data from the rocket to the ground. The systems are capable of a full-duplex communication system; however only the flight module will be sending data and the ground module will be recieving data.
 
 ## Flight Module
