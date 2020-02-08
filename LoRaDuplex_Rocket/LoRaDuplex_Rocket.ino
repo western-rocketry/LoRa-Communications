@@ -1,23 +1,24 @@
 #include <SPI.h>              // include libraries for LoRa Communications
 #include <LoRa.h>             //
 #include <Wire.h>                 //Sensor Data Transmission
-#include "SparkFunMPL3115A2.h"    //
+
 
 //Take this many samples to average out. Higher values will lower resolution, but give smoother data
 #define AVERAGE 127
+#define PREPLENGTH 10000      //Duration in which the rocket is in prep mode before switching to normal
 
-#define csPin 10          // LoRa radio chip select
-#define resetPin 6       // LoRa radio reset
-#define irqPin 1         // change for your board; must be a hardware interrupt pin
+#define csPin 10              // LoRa radio chip select
+#define resetPin 6            // LoRa radio reset
+#define irqPin 1              // change for your board; must be a hardware interrupt pin
 #define localAddress 0x57     // address of this device (ASCII W)
 #define destination 0x45      // destination to send to (ASCII E)
 #define MPU 0x68
-//#define DEBUGPACKET
 
-const int interval = 250;          // interval between LoRa transmissions in milliseconds
+const int interval = 250;     // interval between LoRa transmissions in milliseconds
 
 String outgoing;              // outgoing message
 byte msgCount = 0;            // count of outgoing messages
+byte mode = 0;
 long lastSendTime = 0;        // last send time
 int16_t AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ;
 float realTemp;
@@ -32,8 +33,6 @@ void setup() {
     Serial.println(F("LoRa initialization failed, retrying...\n\n")); delay(5000);
     setup();
   } Serial.println(F("LoRa initialized successfully"));
-
-  Serial.println(F("Initalizing Sensors"));
   //Initalize gyro/accelerometer
   Wire.begin();
   Wire.setClock(400000);
@@ -41,65 +40,78 @@ void setup() {
   Wire.write(0x6B); 
   Wire.write(0x00);    
   Wire.endTransmission(true);
-  if(sensorFunctional){
-    lastSendTime=1;
-    Serial.println(F("Initialized Accelerometer/Gyroscope"));
-  }else{
-    Serial.println(F("Accelerometer/Gyroscope initialization failed, retrying...\n\n")); delay(5000);
-    setup();
-  }
-  
 }
 
 void loop() {
-  //if (millis() - lastSendTime > interval) {
-  if(true){    
-    //Accelerometer & Gyroscope
-    for(int i=0;i<AVERAGE;i++){
-      Wire.beginTransmission(MPU);
-      Wire.write(0x3B);  
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU,14,true);  
-      AAcX+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      AAcY+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      AAcZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      ATmp+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      AGyX+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      AGyY+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      AGyZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
-    }
-    //Change temp to celsius (but divide by 340 once recieved to process)
-    ATmp += 12420;
-    String message = //"GyX:" + String(AAcX) + "\tGyY:" + String(AAcY) + "\tGyZ:" + String(AAcZ) + 
-                      "\nAcX" + String(AGyX) + "\tAcY:" + String(AGyY) + "\tAcZ" + String(AGyZ) +
-                      String(millis()) + "\n";
-    sendMessage(message);                   //max 255 bytes, 4 reserved for frame
-    Serial.print("Sent message: ");
-    #ifdef DEBUGPACKET
-    Serial.println(msgCount);
-    Serial.print("ACX:" + String(AAcX));
-    Serial.print("\t");
-    Serial.print("ACY:" + String(AAcY));
-    Serial.print("\t");
-    Serial.print("ACZ:" + String(AAcZ));
-    Serial.print("\t");
-    Serial.print(realTemp);
-    Serial.print("\t");
-    Serial.print(AGyX);
-    Serial.print("\t");
-    Serial.print(AGyY);
-    Serial.print("\t");
-    Serial.print(AGyZ);
-    Serial.println("\t");
-    #endif
-    AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
-    lastSendTime = millis();                // timestamp the message
+  String message = "";
+  switch(mode){
+    case 0:
+      if(millis>=PREPLENGTH){
+        mode=1;
+      }else{
+        byte accelOK = gyroFunctional ? 0 : 255;
+        message = char(accelOK) + "";
+        sendMessage(message);
+      }
+      break;
+    case 1:
+      AAcX+=(Wire.read()<<8|Wire.read());
+      AAcY+=(Wire.read()<<8|Wire.read());
+      AAcZ+=(Wire.read()<<8|Wire.read());
+      ATmp+=(Wire.read()<<8|Wire.read());
+      AGyX+=(Wire.read()<<8|Wire.read());
+      AGyY+=(Wire.read()<<8|Wire.read());
+      AGyZ+=(Wire.read()<<8|Wire.read());
+      //Change temp to celsius (but divide by 340 once recieved to process)
+      ATmp += 12420;
+      message = //Accelerometer and Gyro Data
+               char(AAcX>>8) + char(AAcX%256) +   //gets the first 8 bits then the last 8 bits
+               char(AAcY>>8) + char(AAcY%256) +
+               char(AAcZ>>8) + char(AAcZ%256) +
+               char(AGyX>>8) + char(AGyX%256) +
+               char(AGyY>>8) + char(AGyY%256) +
+               char(AGyZ>>8) + char(AGyZ%256) +
+               char((AAcX+AAcY+AAcZ+AGyX+AGyY+AGyZ)%256) + //Checksum
+               "";
+      sendMessage(message);                   //max 255 bytes, 4 reserved for frame
+      AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
+      break;
+    case 2:    
+      //Accelerometer & Gyroscope
+      for(int i=0;i<AVERAGE;i++){
+        Wire.beginTransmission(MPU);
+        Wire.write(0x3B);  
+        Wire.endTransmission(false);
+        Wire.requestFrom(MPU,14,true);  
+        AAcX+=(Wire.read()<<8|Wire.read())/AVERAGE;
+        AAcY+=(Wire.read()<<8|Wire.read())/AVERAGE;
+        AAcZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
+        ATmp+=(Wire.read()<<8|Wire.read())/AVERAGE;
+        AGyX+=(Wire.read()<<8|Wire.read())/AVERAGE;
+        AGyY+=(Wire.read()<<8|Wire.read())/AVERAGE;
+        AGyZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
+      }
+      //Change temp to celsius (but divide by 340 once recieved to process)
+      ATmp += 12420;
+      message = //Accelerometer and Gyro Data
+               char(AAcX>>8) + char(AAcX%256) +   //gets the first 8 bits then the last 8 bits
+               char(AAcY>>8) + char(AAcY%256) +
+               char(AAcZ>>8) + char(AAcZ%256) +
+               char((AAcX+AAcY+AAcZ)%256) + //Checksum
+               char(AGyX>>8) + char(AGyX%256) +
+               char(AGyY>>8) + char(AGyY%256) +
+               char(AGyZ>>8) + char(AGyZ%256) +
+               char((AGyX+AGyY+AGyZ)%256) + //Checksum
+               "";
+      sendMessage(message);                   //max 255 bytes, 4 reserved for frame
+      AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
+      break;
   }
   // parse for a packet, and call onReceive with the result:
   onReceive(LoRa.parsePacket());
 }
 
-bool sensorFunctional(){
+bool gyroFunctional(){
     Wire.beginTransmission(MPU);
     Wire.write(0x3B);  
     Wire.endTransmission(false);
@@ -120,11 +132,12 @@ void sendMessage(String outgoing) {
   LoRa.beginPacket();                   // start packet
   LoRa.write(destination);              // add destination address
   LoRa.write(localAddress);             // add sender address
-  LoRa.write(msgCount++);                 // add message ID
+  LoRa.write(mode);                     // Message frame type
+  LoRa.write(msgCount++);               // add message ID
+  LoRa.write(millis());                 // Time from when LoRa started
   LoRa.write(outgoing.length());        // add payload length
   LoRa.print(outgoing);                 // add payload
   LoRa.endPacket();                     // finish packet and send it
-  msgCount++;                           // increment message ID
 }
 
 void onReceive(int packetSize) {

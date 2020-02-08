@@ -37,28 +37,45 @@ void sendMessage(String outgoing) {
   msgCount++;                           // increment message ID
 }
 
-void onReceive(int packetSize) {
-  if (packetSize == 0) return;          // if there's no packet, return
-  // decode frame
-  int recipient = LoRa.read();          // recipient address
-  byte sender = LoRa.read();            // sender address
-  byte incomingMsgId = LoRa.read();     // incoming msg ID
-  byte incomingLength = LoRa.read();    // incoming msg length
-  String incoming = "";
-  //Read message
-  while (LoRa.available()) incoming += (char)LoRa.read();
-  if (incomingLength != incoming.length()) {   // check length for error
-    Serial.println("error: message length does not match length");return;
+void onReceive(int packetSize){
+  if (packetSize == 0) return;  
+  byte dest = LoRa.read();
+  byte send = LoRa.read();
+  byte mode = LoRa.read();
+  byte count = LoRa.read();
+  uint32_t rocketTime = LoRa.read()<<24 + LoRa.read()<<16 + LoRa.read()<<8 + LoRa.read();
+  byte len = LoRa.read();
+  byte msg[len];
+  byte msgCount = 0;
+  while (LoRa.available()) msg[msgCount++] = (char)LoRa.read();
+  switch(mode){
+    case 0:
+      Serial.println("Mode Prep");
+      Serial.println("Time " + String(rocketTime));
+      if(msg[0]==255) Serial.println(F("Acc/Gyro OK"));
+      else if(msg[0]==0) Serial.println(F("Acc/Gyro ERROR"));
+      break;
+    case 1:
+      Serial.println("Mode Launch");
+    case 2:
+      if(mode==2) Serial.println("Mode Normal");
+      Serial.println("Time " + String(rocketTime));
+      int16_t acx,acy,acz,gyx,gyy,gyz;
+      uint8_t chk0,chk1;
+      gyx = msg[0]<<8 + msg[1];
+      gyy = msg[2]<<8 + msg[3];
+      gyz = msg[4]<<8 + msg[5];
+      chk0 = msg[6];
+      acx = msg[7]<<8 + msg[8];
+      acy = msg[9]<<8 + msg[10];
+      acz = msg[11]<<8 + msg[12];
+      chk1 = msg[13];
+      if((gyx+gyy+gyz)%256==chk0) Serial.println("GyX " + String(gyx) + "\nGyY " + String(gyy) + "\nGyZ " + String(gyz));
+      else Serial.println(F("GyX CS FAILED\nGyY CS FAILED\nGyZ CS FAILED"));
+      if((acx+acy+acz)%256==chk1) Serial.println("AcX " + String(acx) + "\nAcY " + String(acy) + "\nAcZ " + String(acz));
+      else Serial.println(F("AcX CS FAILED\nAcY CS FAILED\nAcZ CS FAILED"));
+      break;
   }
-  if (recipient != localAddress && recipient != 0xFF) { // if the recipient isn't this device or broadcast,
-    Serial.println("Packet recieved, incorrect address");return;
-  }
-  
-//  Serial.println("Message ID: " + String(incomingMsgId));
-//  Serial.println("Message length: " + String(incomingLength));
-//  Serial.println("Recieved from " +String(sender,HEX) + " to " + String(recipient,HEX) + "\n\n");
-  Serial.println(incoming);
-//  Serial.print("Signal Strength: " + String((LoRa.packetRssi()/-120)*100) + "% ");
-//  Serial.println("Signal Noise: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
-//  Serial.println();
+  Serial.println("RSSI " + String((LoRa.packetRssi()/-120)*100) + "%");
+  Serial.println("SNR: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
 }
