@@ -10,16 +10,25 @@ Parses data from thermocouples and i2c sensor modules and sends them over LoRa t
 Dest  Send  DataID  MsgID    Millis    MsgLen  Gyro/Accel  ChkSum
 0x45  0x57   00-FF   00-FF  0-FFFFFFFF  00-F6    
 ```
-Dest: Destination Address
-Send: Sender Address      (Sender and Destionation is WE in ASCII, cause I dont know what else to use)
-DataID: Frame data, either will be in:
-  [0x00] Preperation - Gives output on the integrity and operation of all sensors and pre-flight checks. Will last 10 seconds before launch
-  [0x01] Launch - Gives rapid sensor data. Will trigger when the accelerometer reaches a high threshold. Sends the data quickly without any normaization or averaging. Will last 10 seconds after threshold is reached
-  [0x02] Normal - Default setting. Will give averaged samples of all sensors, as the data obtained from sensors can be done so much quicker than sending them all over LoRa. Will give more accurate results
-  [0xFF] Alert - Failure of any component or irregularities in the trajectory
-MessageID: A count from 0-255, then overflow. Used to check if any frames were dropped or missing
-Millis: Time in which the rocket has sent the data as a 32-bit long.
-MsgLen: Message length
+**Dest:** Destination Address
+
+**Send:** Sender Address      (Sender and Destionation is WE in ASCII, cause I dont know what else to use)
+
+**DataID:** Frame data, either will be in:
+
+  **[0x00] Preperation** - Gives output on the integrity and operation of all sensors and pre-flight checks. Will last 10 seconds before launch
+  
+  **[0x01] Launch** - Gives rapid sensor data. Will trigger when the accelerometer reaches a high threshold. Sends the data quickly without any normaization or averaging. Will last 10 seconds after threshold is reached
+  
+  **[0x02] Normal** - Default setting. Will give averaged samples of all sensors, as the data obtained from sensors can be done so much quicker than sending them all over LoRa. Will give more accurate results
+  
+  **[0xFF] Alert** - Failure of any component or irregularities in the trajectory
+  
+**MessageID:** A count from 0-255, then overflow. Used to check if any frames were dropped or missing
+
+**Millis:** Time in which the rocket has sent the data as a 32-bit long.
+
+**MsgLen:** Message length
   
 ### Gyroscope/Accelerometer
 Raw packet format will be a string of 12 bytes. Each data value will have the length of 2 bytes, taking up 12 bytes for the total gyro/accelerometer data. Each 2 bytes will represent a signed 16-bit integer value, in the order of GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ. As of currently, the Gyroscope and Accelerometer is getting the average of 127 samples, which may not pick up sudden moments of acceleration such as take-off, and only serve to normalize the data. This value is subject to change in the future after further testing. If the module failes to initialize, it will send an error message as a value over LoRa containing "0x00", which will be sent to the serial monitor as "Gyroscope/Accelerometer initializtion failed". If initialization succeeds, "0xFF" will be sent instead
