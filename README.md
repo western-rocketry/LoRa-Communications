@@ -1,10 +1,10 @@
-## Low Frequency Radio (LoRa) Communication System
+# Low Frequency Radio (LoRa) Communication System
 A secondary communication system between the ground and flight system to provide sensor data from the rocket to the ground. The systems are capable of a full-duplex communication system; however only the flight module will be sending data and the ground module will be recieving data.
 
 ## Flight Module
 Parses data from thermocouples and i2c sensor modules and sends them over LoRa to the ground. Creates the packet format, which is still to be determined, but as of currently, exists as a string. Packets can not exceed 255 bytes in length, so more than 1 type of frame may be designed to send other module information. Currently, the available sensor data is as follows:
 
-# Raw Frame Format:
+### Raw Frame Format:
 ```
   1    1       1      1        4         1         6          1
 Dest  Send  DataID  MsgID    Millis    MsgLen  Gyro/Accel  ChkSum
@@ -21,7 +21,7 @@ MessageID: A count from 0-255, then overflow. Used to check if any frames were d
 Millis: Time in which the rocket has sent the data as a 32-bit long.
 MsgLen: Message length
   
-# Gyroscope/Accelerometer
+### Gyroscope/Accelerometer
 Raw packet format will be a string of 12 bytes. Each data value will have the length of 2 bytes, taking up 12 bytes for the total gyro/accelerometer data. Each 2 bytes will represent a signed 16-bit integer value, in the order of GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ. As of currently, the Gyroscope and Accelerometer is getting the average of 127 samples, which may not pick up sudden moments of acceleration such as take-off, and only serve to normalize the data. This value is subject to change in the future after further testing. If the module failes to initialize, it will send an error message as a value over LoRa containing "0x00", which will be sent to the serial monitor as "Gyroscope/Accelerometer initializtion failed". If initialization succeeds, "0xFF" will be sent instead
 
 The following data will be sent to the Serial Monitor as such:
@@ -34,7 +34,7 @@ AcY ###
 AcZ ###
 ```
 
-# Checksum
+### Checksum
 The LoRa system will implement a simple 8-bit checksum after each module data. If the checksum fails, the data will be outputted to the serial monitor as "CS Failed"
 
 
