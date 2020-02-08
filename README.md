@@ -22,6 +22,8 @@ Dest  Send  DataID  MsgID    Millis    MsgLen  Gyro/Accel  ChkSum
   
   **[0x02] Normal** - Default setting. Will give averaged samples of all sensors, as the data obtained from sensors can be done so much quicker than sending them all over LoRa. Will give more accurate results
   
+  **[0xFE] ACK** - Acknowledgement of any data sent to the rocket
+  
   **[0xFF] Alert** - Failure of any component or irregularities in the trajectory
   
 **MessageID:** A count from 0-255, then overflow. Used to check if any frames were dropped or missing
