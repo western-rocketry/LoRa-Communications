@@ -3,6 +3,8 @@
 #include <Wire.h>                 //Sensor Data Transmission
 #include "decode.h"
 
+#define PRINTTOSERIAL
+
 #define csPin 10              // LoRa radio chip select
 #define resetPin 6            // LoRa radio reset
 #define irqPin 1              // change for your board; must be a hardware interrupt pin
@@ -39,47 +41,65 @@ void onReceive(int packetSize){
   rocketTime = parseTime(LoRa.read(),LoRa.read(),LoRa.read(),LoRa.read());
   byte len = LoRa.read();       //message length
   byte msg[len];                //message
+  #ifdef PRINTTOSERIAL
   Serial.print("Message length: "); Serial.println(len+9);
   Serial.print("Message destination: "); Serial.println(dest,HEX);
   Serial.print("Message sender: "); Serial.println(send,HEX);
   Serial.print("Message mode: "); Serial.println(mode);
   Serial.print("Message count id: "); Serial.println(count);
-  while (LoRa.available())      //read message
-    msg[msgCount++] += (char)LoRa.read(); 
+  #endif
+  while (LoRa.available()){      //read message
+    byte temp = LoRa.read();
+    msg[msgCount] = temp; 
+    msgCount++;
+  }
   switch(mode){
     case 0:
+      #ifdef PRINTTOSERIAL
       Serial.println("Mode Prep");
       Serial.println("Time " + String(rocketTime));
-      (msg[0]==32) ? Serial.println(F("Acc/Gyro OK")) : Serial.println("Acc/Gyro ERROR" + String(msg[0]));
+      (msg[0]==255) ? Serial.println(F("Acc/Gyro OK")) : Serial.println("Acc/Gyro ERROR" + String(msg[0]));
+      #endif
       break;
     case 1:
+      #ifdef PRINTTOSERIAL
       Serial.println("Mode Launch");
-    case 2:
+      #endif
+    case 2:{
+      #ifdef PRINTTOSERIAL
       if(mode==2) Serial.println("Mode Normal");
       Serial.println("Time " + String(rocketTime));
-      int16_t acx,acy,acz,gyx,gyy,gyz;
+      #endif
+      int16_t acx,acy,acz,gyx,gyy,gyz,tmp;
       byte chk0,chk1;
-      parseData16(gyx,msg[0],msg[1]);
-      parseData16(gyy,msg[2],msg[3]);
-      parseData16(gyz,msg[4],msg[5]);
+      parseData16(acx,msg[0],msg[1]);
+      parseData16(acy,msg[2],msg[3]);
+      parseData16(acz,msg[4],msg[5]);
       parseData8(chk0,msg[6]);
-      parseData16(acx,msg[7],msg[8]);
-      parseData16(acy,msg[9],msg[10]);
-      parseData16(acz,msg[11],msg[12]);
+      parseData16(gyx,msg[7],msg[8]);
+      parseData16(gyy,msg[9],msg[10]);
+      parseData16(gyz,msg[11],msg[12]);
       parseData8(chk1,msg[13]);
-      Serial.print(msg[0],HEX);
-      Serial.print(msg[1],HEX);
-      Serial.print(msg[2],HEX);
-      Serial.println(msg[3],HEX);
+      parseData16(tmp,msg[14],msg[15]);
+      #ifdef PRINTTOSERIAL
       Serial.println("GyX " + String(gyx) + "\nGyY " + String(gyy) + "\nGyZ " + String(gyz));
-      if(byte((gyx+gyy+gyz)%256)!=byte(chk0)) Serial.println(F("CS FAILED"));
+      if(byte((acx+acy+acz)%256)!=byte(chk0)) Serial.println(F("CS FAILED - GYRO"));
       Serial.println("AcX " + String(acx) + "\nAcY " + String(acy) + "\nAcZ " + String(acz));
-      if(byte((acx+acy+acz)%256)!=byte(chk1)) Serial.println(F("CS FAILED"));
+      if(byte((gyx+gyy+gyz)%256)!=byte(chk1)) Serial.println(F("CS FAILED - ACCELEROMETER"));
+      Serial.println("Temp " + String(float(tmp)/340.0 + 36.53));
       Serial.println();
+      #endif
+      //Serial plotter
+      //Serial.println("AcX " + String(acx) + "\tAcY " + String(acy) + "\tAcZ " + String(acz) + "\tTemp" +String(float(tmp)/340.0 + 36.53) );
       break;
-     default:
-       Serial.println(mode);
+    }default:{
+      #ifdef PRINTTOSERIAL
+      Serial.println(mode);
+      #endif
+    }
   }
-//  Serial.println("RSSI " + String((LoRa.packetRssi()/-120)*100) + "%");
-//  Serial.println("SNR: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
+  #ifdef PRINTTOSERIAL
+  Serial.println("RSSI " + String((LoRa.packetRssi()/-120)*100) + "%");
+  Serial.println("SNR: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
+  #endif
 }

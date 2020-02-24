@@ -37,13 +37,13 @@ void checkData(String message, int AAcX, int AAcY, int AAcZ, int AGyX, int AGyY,
       //decode data
       int16_t acx,acy,acz,gyx,gyy,gyz;
       byte chk0,chk1;
-      parseData16(gyx,(message.charAt(0)),(message.charAt(1)));
-      parseData16(gyy,(message.charAt(2)),(message.charAt(3)));
-      parseData16(gyz,(message.charAt(4)),(message.charAt(5)));
+      parseData16(acx,(message.charAt(0)),(message.charAt(1)));
+      parseData16(acy,(message.charAt(2)),(message.charAt(3)));
+      parseData16(acz,(message.charAt(4)),(message.charAt(5)));
       parseData8(chk0,(message.charAt(6)));
-      parseData16(acx,(message.charAt(7)),(message.charAt(8)));
-      parseData16(acy,(message.charAt(9)),(message.charAt(10)));
-      parseData16(acz,(message.charAt(11)),(message.charAt(12)));
+      parseData16(gyx,(message.charAt(7)),(message.charAt(8)));
+      parseData16(gyy,(message.charAt(9)),(message.charAt(10)));
+      parseData16(gyz,(message.charAt(11)),(message.charAt(12)));
       parseData8(chk1,(message.charAt(13)));
       
       //Check Data
@@ -57,10 +57,11 @@ void checkData(String message, int AAcX, int AAcY, int AAcZ, int AGyX, int AGyY,
       printByte(char(AAcX>>8));
       printByte(char(AAcX%256));
       Serial.println();
-      Serial.print("acx Recieved   ");
+      Serial.print("Msg Recieved   ");
       printByte(char(message.charAt(0)));
       printByte(char(message.charAt(1)));
-      Serial.println();
+      Serial.println(message);
+      Serial.println(" - " + String(message.length()));
       for(int i=0;i<8;i++){
         bitWrite(acx,8+i,bitRead((byte)(message.charAt(0)),i));
         bitWrite(acx,i,bitRead((byte)(message.charAt(1)),i));
@@ -70,11 +71,11 @@ void checkData(String message, int AAcX, int AAcY, int AAcZ, int AGyX, int AGyY,
       Serial.print("acx String     ");
       Serial.println(acx);
       Serial.print("CK Data ");
-      Serial.print(gyx); Serial.print(" ");
-      Serial.print(gyy); Serial.print(" ");
-      Serial.print(gyz); Serial.print(" ");
       Serial.print(acx); Serial.print(" ");
       Serial.print(acy); Serial.print(" ");
-      Serial.println(acz);
+      Serial.print(acz); Serial.print(" ");
+      Serial.print(gyx); Serial.print(" ");
+      Serial.print(gyy); Serial.print(" ");
+      Serial.println(gyz);
       Serial.println("CK CKSM " + String(chk0) + " " +  String(chk1)+"\n");
 }

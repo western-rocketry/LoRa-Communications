@@ -49,9 +49,9 @@ void loop() {
       if(millis()>=PREPLENGTH){
         mode=2;
       }else{
-        byte accelOK = gyroFunctional() ? 255 : 0;
-        String message = char(accelOK) + "";
-        sendMessage(0, message); //change to proper frame later
+        byte accelOK = gyroFunctional() ? 0 : 255;
+        byte message = {char(accelOK)};
+        sendMessage(0, message, 1); //change to proper frame later
       }
       break;
     }case 1:{ //curly bracket is to redeclare string: "message" in its own scope so the IDE doesnt get mad
@@ -66,24 +66,23 @@ void loop() {
       AGyX+=(Wire.read()<<8|Wire.read());
       AGyY+=(Wire.read()<<8|Wire.read());
       AGyZ+=(Wire.read()<<8|Wire.read());
-      //Change temp to celsius (but divide by 340 once recieved to process)
-      ATmp += 12420;
-      String message = ""; //need to redeclare or some sort of pointer error screws up the data
-      message += char(AAcX>>8); //need to do this, otherwise the data gets screwed up by adding the numeric char value
-      message += char(AAcX%256);
-      message += char(AAcY>>8);
-      message += char(AAcY%256);
-      message += char(AAcZ>>8);
-      message += char(AAcZ%256);
-      message += char((AAcX+AAcY+AAcZ)%256); //Checksum
-      message += char(AGyX>>8);
-      message += char(AGyX%256);
-      message += char(AGyY>>8);
-      message += char(AGyY%256);
-      message += char(AGyZ>>8);
-      message += char(AGyZ%256);
-      message += char((AGyX+AGyY+AGyZ)%256); //checksum
-      sendMessage(1, message);               //max 255 bytes, 4 reserved for frame
+      byte arr[] = {
+        char(AAcX>>8), 
+        char(AAcX%256),
+        char(AAcY>>8),
+        char(AAcY%256),
+        char(AAcZ>>8),
+        char(AAcZ%256),
+        char((AAcX+AAcY+AAcZ)%256), //Checksum
+        char(AGyX>>8),
+        char(AGyX%256),
+        char(AGyY>>8),
+        char(AGyY%256),
+        char(AGyZ>>8),
+        char(AGyZ%256),
+        char((AGyX+AGyY+AGyZ)%256) //checksum
+      };
+      sendMessage(1, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }case 2:{ //curly bracket is to redeclare string: "message" in its own scope so the IDE doesnt get mad
@@ -101,31 +100,32 @@ void loop() {
         AGyY+=(Wire.read()<<8|Wire.read())/AVERAGE;
         AGyZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
       }
-      //Change temp to celsius (but divide by 340 once recieved to process)
-      ATmp += 12420;
-      String message = ""; //need to redeclare or some sort of pointer error screws up the data
-      message += char(AAcX>>8); //need to do this, otherwise the data gets screwed up by adding the numeric char value
-      message += char(AAcX%256);
-      message += char(AAcY>>8);
-      message += char(AAcY%256);
-      message += char(AAcZ>>8);
-      message += char(AAcZ%256);
-      message += char((AAcX+AAcY+AAcZ)%256); //Checksum
-      message += char(AGyX>>8);
-      message += char(AGyX%256);
-      message += char(AGyY>>8);
-      message += char(AGyY%256);
-      message += char(AGyZ>>8);
-      message += char(AGyZ%256);
-      message += char((AGyX+AGyY+AGyZ)%256); //checksum
-      sendMessage(2, message);                   //max 255 bytes, 4 reserved for frame
+      byte arr[] = {
+        char(AAcX>>8), 
+        char(AAcX%256),
+        char(AAcY>>8),
+        char(AAcY%256),
+        char(AAcZ>>8),
+        char(AAcZ%256),
+        char((AAcX+AAcY+AAcZ)%256), //Checksum
+        char(AGyX>>8),
+        char(AGyX%256),
+        char(AGyY>>8),
+        char(AGyY%256),
+        char(AGyZ>>8),
+        char(AGyZ%256),
+        char((AGyX+AGyY+AGyZ)%256), //checksum
+        char(ATmp)
+      };
+//      Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
+      sendMessage(2, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       //Serial plotter
       //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }
   }
-  delay(5000);
+//  delay(500);
   // parse for a packet, and call onReceive with the result:
   onReceive(LoRa.parsePacket());
 }
@@ -147,7 +147,7 @@ bool gyroFunctional(){
     return(true);
 }
 
-void sendMessage(byte msgmode, String outgoing) {
+void sendMessage(byte msgmode, byte outgoing[], byte outgoingSize) {
   LoRa.beginPacket();                   // start packet
   LoRa.write(destination);              // add destination address      
   LoRa.write(localAddress);             // add sender address
@@ -158,14 +158,11 @@ void sendMessage(byte msgmode, String outgoing) {
   LoRa.write(timeM>>16%256);             // Time from when LoRa started
   LoRa.write(timeM>>8%256);              // Time from when LoRa started
   LoRa.write(timeM%256);                 // Time from when LoRa started
-  LoRa.write(outgoing.length());        // add payload length
-  LoRa.print(outgoing);                 // add payload
-  Serial.print(outgoing.charAt(0),HEX);
-  Serial.print(outgoing.charAt(1),HEX);
-  Serial.print(outgoing.charAt(2),HEX);
-  Serial.println(outgoing.charAt(3),HEX);
+  LoRa.write(outgoingSize);             // add payload length
+  for(int i=0; i<outgoingSize;i++)
+    LoRa.write(outgoing[i]);            // add payload
   LoRa.endPacket();                     // finish packet and send it
-  Serial.println("Sent message: " + String(msgCount) + " with length " + String((outgoing.length()+9)) + " at time: " + String(timeM)); //9 includes 1 for destination, local addr, msg mode, msg count, msg length, and 4 for millis()
+  //Serial.println("Sent message: " + String(msgCount) + " with length " + String((outgoingSize+9)) + " at time: " + String(timeM)); //9 includes 1 for destination, local addr, msg mode, msg count, msg length, and 4 for millis()
   msgCount++;
 }
 

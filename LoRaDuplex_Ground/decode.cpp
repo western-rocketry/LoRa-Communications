@@ -9,8 +9,8 @@ void parseData8(byte &val, byte b1){
 
 void parseData16(int16_t &val, byte b1, byte b2){
   for(int i=0;i<8;i++){
-    bitWrite(val,i,bitRead(b1,i));
-    bitWrite(val,i+8,bitRead(b2,i));
+    bitWrite(val,i+8,bitRead(b1,i));
+    bitWrite(val,i,bitRead(b2,i));
   }
 }
 
