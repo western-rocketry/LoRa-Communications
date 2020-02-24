@@ -49,8 +49,8 @@ void loop() {
       if(millis()>=PREPLENGTH){
         mode=2;
       }else{
-        byte accelOK = gyroFunctional() ? 0 : 255;
-        byte message = {char(accelOK)};
+        byte accelOK = gyroFunctional() ? 255 : 0;
+        byte message[] = {accelOK};
         sendMessage(0, message, 1); //change to proper frame later
       }
       break;
@@ -125,7 +125,7 @@ void loop() {
       break;
     }
   }
-//  delay(500);
+  delay(500);
   // parse for a packet, and call onReceive with the result:
   onReceive(LoRa.parsePacket());
 }

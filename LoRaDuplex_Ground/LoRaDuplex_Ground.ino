@@ -41,13 +41,6 @@ void onReceive(int packetSize){
   rocketTime = parseTime(LoRa.read(),LoRa.read(),LoRa.read(),LoRa.read());
   byte len = LoRa.read();       //message length
   byte msg[len];                //message
-  #ifdef PRINTTOSERIAL
-  Serial.print("Message length: "); Serial.println(len+9);
-  Serial.print("Message destination: "); Serial.println(dest,HEX);
-  Serial.print("Message sender: "); Serial.println(send,HEX);
-  Serial.print("Message mode: "); Serial.println(mode);
-  Serial.print("Message count id: "); Serial.println(count);
-  #endif
   while (LoRa.available()){      //read message
     byte temp = LoRa.read();
     msg[msgCount] = temp; 
@@ -56,18 +49,23 @@ void onReceive(int packetSize){
   switch(mode){
     case 0:
       #ifdef PRINTTOSERIAL
-      Serial.println("Mode Prep");
+      Serial.println("\n\nMode Prep");
       Serial.println("Time " + String(rocketTime));
-      (msg[0]==255) ? Serial.println(F("Acc/Gyro OK")) : Serial.println("Acc/Gyro ERROR" + String(msg[0]));
+      (msg[0]==255) ? Serial.println(F("Acc/Gyro OK")) : Serial.println("Acc/Gyro ERROR " + String(msg[0]));
       #endif
       break;
     case 1:
       #ifdef PRINTTOSERIAL
-      Serial.println("Mode Launch");
+      Serial.println("\n\nMode Launch");
       #endif
     case 2:{
       #ifdef PRINTTOSERIAL
-      if(mode==2) Serial.println("Mode Normal");
+      if(mode==2) Serial.println("\n\nMode Normal");
+      Serial.print("Message length: "); Serial.println(len+9);
+      Serial.print("Message destination: "); Serial.println(dest,HEX);
+      Serial.print("Message sender: "); Serial.println(send,HEX);
+      Serial.print("Message mode: "); Serial.println(mode);
+      Serial.print("Message count id: "); Serial.println(count);
       Serial.println("Time " + String(rocketTime));
       #endif
       int16_t acx,acy,acz,gyx,gyy,gyz,tmp;
@@ -87,7 +85,8 @@ void onReceive(int packetSize){
       Serial.println("AcX " + String(acx) + "\nAcY " + String(acy) + "\nAcZ " + String(acz));
       if(byte((gyx+gyy+gyz)%256)!=byte(chk1)) Serial.println(F("CS FAILED - ACCELEROMETER"));
       Serial.println("Temp " + String(float(tmp)/340.0 + 36.53));
-      Serial.println();
+      Serial.println("RSSI " + String((LoRa.packetRssi()/-120)*100) + "%");
+      Serial.println("SNR: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
       #endif
       //Serial plotter
       //Serial.println("AcX " + String(acx) + "\tAcY " + String(acy) + "\tAcZ " + String(acz) + "\tTemp" +String(float(tmp)/340.0 + 36.53) );
@@ -98,8 +97,4 @@ void onReceive(int packetSize){
       #endif
     }
   }
-  #ifdef PRINTTOSERIAL
-  Serial.println("RSSI " + String((LoRa.packetRssi()/-120)*100) + "%");
-  Serial.println("SNR: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
-  #endif
 }
