@@ -52,14 +52,16 @@ The LoRa system will implement a simple 8-bit checksum after each module data. I
 
 
 ## Ground Module
-The ground module will be responsible for recieving data sent by the rocket, as well as calculating signal strength and quality. The ground module will also be calculating the checksum to ensure the data from the rocket is correct. Any failed checksum will output the following as an example:
+The ground module will be responsible for recieving data sent by the rocket, as well as calculating signal strength and quality. The ground module will also be calculating the checksum to ensure the data from the rocket is correct. The data will still be passed if any data management can decide to discard specific or the entire data set. Any failed checksum will output the following as an example:
 ```
-GyX CS FAILED
-GyY CS FAILED
-GyZ CS FAILED
+GyX ###
+GyY ###
+GyZ ###
+CS FAILED - GYRO
 AcX ###
 AcY ###
 AcZ ###
+CS FAILED - ACCELEROMETER
 ```
 The serial monitor will be the main communication system between the LoRa system and the Ground team. Below are some examples of what data will be outputted to the Serial Monitor:
 ```
