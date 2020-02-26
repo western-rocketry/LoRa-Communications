@@ -114,13 +114,6 @@ SNR ###
 ```
 Mode Alert
 Time ###
-### packets have been lost
-RSSI ###
-SNR ###
-```
-```
-Mode Alert
-Time ###
 Checksum failed on ### data values
 RSSI ###
 SNR ###
