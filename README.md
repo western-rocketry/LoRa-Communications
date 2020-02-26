@@ -6,9 +6,9 @@ Parses data from thermocouples and i2c sensor modules and sends them over LoRa t
 
 ### Raw Frame Format:
 ```
-  1    1       1      1        4         1         6          1
-Dest  Send  DataID  MsgID    Millis    MsgLen  Gyro/Accel  ChkSum
-0x45  0x57   00-FF   00-FF  0-FFFFFFFF  00-F6    
+  1    1       1      1        4         1          6         1         6        1         2
+Dest  Send  DataID  MsgID    Millis    MsgLen     Accel     ChkSum     Gyro    ChkSum    Temp1
+0x45  0x57   00-FF   00-FF  0-FFFFFFFF  00-F6   3x2 Bytes   0-255   3x2 Bytes   0-255   2 Bytes
 ```
 **Dest:** Destination Address
 
