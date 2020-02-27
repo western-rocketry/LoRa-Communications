@@ -1,12 +1,16 @@
 #include <SPI.h>              // include libraries for LoRa Communications
 #include <LoRa.h>             //
 #include <Wire.h>                 //Sensor Data Transmission
-#include "decode.h"
+#include <Adafruit_GPS.h>
+#include <SoftwareSerial.h>     //GPS requires a serial port
+#include "protocol.h"
 
+SoftwareSerial mySerial(3, 2);
+Adafruit_GPS GPS(&mySerial);
 
 //Take this many samples to average out. Higher values will lower resolution, but give smoother data
 #define AVERAGE 127
-#define PREPLENGTH 5000      //Duration in which the rocket is in prep mode before switching to normal
+#define PREPLENGTH 1000      //Duration in which the rocket is in prep mode before switching to normal
 
 #define csPin 10              // LoRa radio chip select
 #define resetPin 6            // LoRa radio reset
@@ -21,26 +25,30 @@ String outgoing;              // outgoing message
 byte msgCount = 0;            // count of outgoing messages
 byte mode = 0;
 long lastSendTime = 0;        // last send time
-int16_t AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ;
+int16_t AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ = 0;
 float realTemp;
 
 void setup() {
-  Serial.begin(19200);                 
+  Serial.begin(115200);               
   while (!Serial);
-
   //initalize LoRa communications
   LoRa.setPins(csPin, resetPin, irqPin);    // override the default CS, reset, and IRQ pins (optional)
   if (!LoRa.begin(915E6)) {                 // initialize at 915 MHz
     Serial.println(F("LoRa initialization failed, retrying...\n\n")); delay(5000);
     setup();
   } Serial.println(F("LoRa initialized successfully"));
-  //Initalize gyro/accelerometer
+  //Initialize gyro/accelerometer
   Wire.begin();
   Wire.setClock(400000);
   Wire.beginTransmission(MPU);
   Wire.write(0x6B); 
   Wire.write(0x00);    
   Wire.endTransmission(true);
+  //Initialize GPS
+  GPS.begin(9600);
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
+  GPS.sendCommand(PGCMD_ANTENNA);
 }
 
 void loop() {
@@ -49,102 +57,52 @@ void loop() {
       if(millis()>=PREPLENGTH){
         mode=2;
       }else{
-        byte accelOK = gyroFunctional() ? 255 : 0;
-        byte message[] = {accelOK};
-        sendMessage(0, message, 1); //change to proper frame later
+        byte accelOK = gyroFunctional();
+        byte gpsOK = gpsFunctional(); 
+        byte message[] = {accelOK, gpsOK};
+        sendMessage(0, message, 2); //change to proper frame later
+        delay(750);
       }
       break;
-    }case 1:{ //curly bracket is to redeclare string: "message" in its own scope so the IDE doesnt get mad
-      Wire.beginTransmission(MPU);
-      Wire.write(0x3B);  
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU,14,true);  
-      AAcX+=(Wire.read()<<8|Wire.read());
-      AAcY+=(Wire.read()<<8|Wire.read());
-      AAcZ+=(Wire.read()<<8|Wire.read());
-      ATmp+=(Wire.read()<<8|Wire.read());
-      AGyX+=(Wire.read()<<8|Wire.read());
-      AGyY+=(Wire.read()<<8|Wire.read());
-      AGyZ+=(Wire.read()<<8|Wire.read());
-      byte arr[] = {
-        char(AAcX>>8), 
-        char(AAcX%256),
-        char(AAcY>>8),
-        char(AAcY%256),
-        char(AAcZ>>8),
-        char(AAcZ%256),
-        char((AAcX+AAcY+AAcZ)%256), //Checksum
-        char(AGyX>>8),
-        char(AGyX%256),
-        char(AGyY>>8),
-        char(AGyY%256),
-        char(AGyZ>>8),
-        char(AGyZ%256),
-        char((AGyX+AGyY+AGyZ)%256) //checksum
-      };
+    }case 1:{ 
+      addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);
+      byte arr[16];
+      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ);
       sendMessage(1, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
-    }case 2:{ //curly bracket is to redeclare string: "message" in its own scope so the IDE doesnt get mad
+    }case 2:{ 
       //Accelerometer & Gyroscope
-      for(int i=0;i<AVERAGE;i++){
-        Wire.beginTransmission(MPU);
-        Wire.write(0x3B);  
-        Wire.endTransmission(false);
-        Wire.requestFrom(MPU,14,true);  
-        AAcX+=(Wire.read()<<8|Wire.read())/AVERAGE;
-        AAcY+=(Wire.read()<<8|Wire.read())/AVERAGE;
-        AAcZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
-        ATmp+=(Wire.read()<<8|Wire.read())/AVERAGE;
-        AGyX+=(Wire.read()<<8|Wire.read())/AVERAGE;
-        AGyY+=(Wire.read()<<8|Wire.read())/AVERAGE;
-        AGyZ+=(Wire.read()<<8|Wire.read())/AVERAGE;
-      }
-      byte arr[] = {
-        char(AAcX>>8), 
-        char(AAcX%256),
-        char(AAcY>>8),
-        char(AAcY%256),
-        char(AAcZ>>8),
-        char(AAcZ%256),
-        char((AAcX+AAcY+AAcZ)%256), //Checksum
-        char(AGyX>>8),
-        char(AGyX%256),
-        char(AGyY>>8),
-        char(AGyY%256),
-        char(AGyZ>>8),
-        char(AGyZ%256),
-        char((AGyX+AGyY+AGyZ)%256), //checksum
-        char(ATmp)
-      };
-//      Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
+      for(int i=0;i<AVERAGE;i++) addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);
+      byte arr[16];
+      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ);
       sendMessage(2, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
-      //Serial plotter
+      //Serial monitoring
       //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
+      //Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }
   }
-  delay(500);
   // parse for a packet, and call onReceive with the result:
   onReceive(LoRa.parsePacket());
 }
 
-bool gyroFunctional(){
-    Wire.beginTransmission(MPU);
-    Wire.write(0x3B);  
-    Wire.endTransmission(false);
-    Wire.requestFrom(MPU,14,true);  
-    AAcX=Wire.read()<<8|Wire.read();    
-    AAcY=Wire.read()<<8|Wire.read();  
-    AAcZ=Wire.read()<<8|Wire.read();   
-    ATmp=Wire.read()<<8|Wire.read(); 
-    AGyX=Wire.read()<<8|Wire.read();  
-    AGyY=Wire.read()<<8|Wire.read();  
-    AGyZ=Wire.read()<<8|Wire.read();      
-    if(AAcX==-1 && AAcY==-1 && AAcZ==-1) return(false);
+byte gyroFunctional(){
+    addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);    
+    if(AAcX==-1 && AAcY==-1 && AAcZ==-1) return(0);
     AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
-    return(true);
+    return(255);
+}
+
+byte gpsFunctional(){
+  if((byte)GPS.fix==0){
+    return(0);
+  }else if((byte)GPS.fix==1){
+    return(255);
+  }else{
+    return((byte)GPS.fix);
+  }
 }
 
 void sendMessage(byte msgmode, byte outgoing[], byte outgoingSize) {

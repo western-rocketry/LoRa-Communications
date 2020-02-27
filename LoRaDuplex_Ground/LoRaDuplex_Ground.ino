@@ -15,7 +15,7 @@
 uint16_t msgCount = 0;
 
 void setup() {
-  Serial.begin(19200);                 
+  Serial.begin(115200);                 
   while (!Serial);
   //initalize LoRa communications
   LoRa.setPins(csPin, resetPin, irqPin);    // override the default CS, reset, and IRQ pins (optional)

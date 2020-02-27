@@ -1,5 +1,6 @@
-#include "decode.h"
+#include "protocol.h"
 #include <Arduino.h>
+#include <Wire.h>
 
 void parseData8(byte &val, byte b1){
   for(int i=0;i<8;i++){
@@ -32,6 +33,42 @@ void printByte(byte b){
   for(int i = 7; i >= 0; i--)
     Serial.print(bitRead(b,i));
 }
+void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
+  addData(addr,acx,acy,acz,temp,gyx,gyy,gyz,1);  
+}
+void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz, uint8_t average){
+  Wire.beginTransmission(addr);
+  Wire.write(0x3B);  
+  Wire.endTransmission(false);
+  Wire.requestFrom(addr,14,true);  
+  acx+=(Wire.read()<<8|Wire.read());
+  acy+=(Wire.read()<<8|Wire.read());
+  acz+=(Wire.read()<<8|Wire.read());
+  temp+=(Wire.read()<<8|Wire.read());
+  gyx+=(Wire.read()<<8|Wire.read());
+  gyy+=(Wire.read()<<8|Wire.read());
+  gyz+=(Wire.read()<<8|Wire.read()); 
+}
+
+void encodeData(byte *arr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
+  arr[0] = char(acx>>8); 
+  arr[1] = char(acx%256);
+  arr[2] = char(acy>>8);
+  arr[3] = char(acy%256);
+  arr[4] = char(acz>>8);
+  arr[5] = char(acz%256);
+  arr[6] = char((acx+acy+acz)%256); //Checksum
+  arr[7] = char(gyx>>8);
+  arr[8] = char(gyx%256);
+  arr[9] = char(gyy>>8);
+  arr[10] = char(gyy%256);
+  arr[11] = char(gyz>>8);
+  arr[12] = char(gyz%256);
+  arr[13] = char((gyx+gyy+gyz)%256); //checksum
+  arr[14] = char(temp>>8);
+  arr[15] = char(temp%256);
+}
+
 
 void checkData(String message, int AAcX, int AAcY, int AAcZ, int AGyX, int AGyY, int AGyZ){
       //decode data
