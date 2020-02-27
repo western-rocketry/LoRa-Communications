@@ -5,12 +5,9 @@
 #include <SoftwareSerial.h>     //GPS requires a serial port
 #include "protocol.h"
 
-SoftwareSerial mySerial(3, 2);
-Adafruit_GPS GPS(&mySerial);
-
 //Take this many samples to average out. Higher values will lower resolution, but give smoother data
 #define AVERAGE 127
-#define PREPLENGTH 1000      //Duration in which the rocket is in prep mode before switching to normal
+#define PREPLENGTH 15000      //Duration in which the rocket is in prep mode before switching to normal
 
 #define csPin 10              // LoRa radio chip select
 #define resetPin 6            // LoRa radio reset
@@ -18,6 +15,10 @@ Adafruit_GPS GPS(&mySerial);
 #define MPU 0x68
 #define localAddress 0x57     // address of this device (ASCII W)
 #define destination 0x45      // destination to send to (ASCII E)
+#define GPSECHO  true
+
+SoftwareSerial mySerial(4, 3);
+Adafruit_GPS GPS(&mySerial);
 
 const int interval = 250;     // interval between LoRa transmissions in milliseconds
 
@@ -37,7 +38,7 @@ void setup() {
     Serial.println(F("LoRa initialization failed, retrying...\n\n")); delay(5000);
     setup();
   } Serial.println(F("LoRa initialized successfully"));
-  //Initialize gyro/accelerometer
+  Initialize gyro/accelerometer
   Wire.begin();
   Wire.setClock(400000);
   Wire.beginTransmission(MPU);
@@ -49,9 +50,12 @@ void setup() {
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
   GPS.sendCommand(PGCMD_ANTENNA);
+  delay(1000);
+  mySerial.println(PMTK_Q_RELEASE);
 }
 
 void loop() {
+  char c = GPS.read();
   switch(mode){
     case 0:{ //curly bracket is to redeclare string: "message" in its own scope so the IDE doesnt get mad
       if(millis()>=PREPLENGTH){
@@ -61,7 +65,9 @@ void loop() {
         byte gpsOK = gpsFunctional(); 
         byte message[] = {accelOK, gpsOK};
         sendMessage(0, message, 2); //change to proper frame later
-        delay(750);
+        Serial.println("Accel: " + String(accelOK));
+        Serial.println("GPS: " + String(gpsOK));
+        delay(1000);
       }
       break;
     }case 1:{ 
@@ -73,13 +79,13 @@ void loop() {
       break;
     }case 2:{ 
       //Accelerometer & Gyroscope
-      for(int i=0;i<AVERAGE;i++) addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);
+      addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ, AVERAGE);
       byte arr[16];
       encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ);
       sendMessage(2, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       //Serial monitoring
       //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
-      //Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
+      Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }
@@ -96,12 +102,31 @@ byte gyroFunctional(){
 }
 
 byte gpsFunctional(){
-  if((byte)GPS.fix==0){
-    return(0);
-  }else if((byte)GPS.fix==1){
-    return(255);
+  if (GPS.newNMEAreceived()) {
+    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+      gpsFunctional();// we can fail to parse a sentence in which case we should just wait for another
+  }
+  Serial.print("\nTime: ");
+  if (GPS.hour < 10) { Serial.print('0'); }
+  Serial.print(GPS.hour, DEC); Serial.print(':');
+  if (GPS.minute < 10) { Serial.print('0'); }
+  Serial.print(GPS.minute, DEC); Serial.print(':');
+  if (GPS.seconds < 10) { Serial.print('0'); }
+  Serial.print(GPS.seconds, DEC); Serial.print('.');
+  if (GPS.milliseconds < 10) {
+    Serial.print("00");
+  } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
+    Serial.print("0");
+  }
+  if(GPS.seconds==GPS.milliseconds && GPS.milliseconds==0){
+    Serial.println(String(GPS.seconds) + " " + String(GPS.milliseconds));
+    if((byte)GPS.fix==1){
+      return(1); //no Signal
+    }else{
+      return(0); //no time movement and no signal
+    } 
   }else{
-    return((byte)GPS.fix);
+    return(255);
   }
 }
 

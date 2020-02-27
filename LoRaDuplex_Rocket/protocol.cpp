@@ -34,20 +34,22 @@ void printByte(byte b){
     Serial.print(bitRead(b,i));
 }
 void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
-  addData(addr,acx,acy,acz,temp,gyx,gyy,gyz,1);  
+  addData(addr,acx,acy,acz,temp,gyx,gyy,gyz,1.0);  
 }
 void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz, uint8_t average){
-  Wire.beginTransmission(addr);
-  Wire.write(0x3B);  
-  Wire.endTransmission(false);
-  Wire.requestFrom(addr,14,true);  
-  acx+=(Wire.read()<<8|Wire.read());
-  acy+=(Wire.read()<<8|Wire.read());
-  acz+=(Wire.read()<<8|Wire.read());
-  temp+=(Wire.read()<<8|Wire.read());
-  gyx+=(Wire.read()<<8|Wire.read());
-  gyy+=(Wire.read()<<8|Wire.read());
-  gyz+=(Wire.read()<<8|Wire.read()); 
+  for(int i=0;i<average;i++){  
+    Wire.beginTransmission(addr);
+    Wire.write(0x3B);  
+    Wire.endTransmission(false);
+    Wire.requestFrom(addr,14,true);  
+    acx+= (Wire.read()<<8|Wire.read())/average;
+    acy+= (Wire.read()<<8|Wire.read())/average;
+    acz+= (Wire.read()<<8|Wire.read())/average;
+    temp+=(Wire.read()<<8|Wire.read())/average;
+    gyx+= (Wire.read()<<8|Wire.read())/average;
+    gyy+= (Wire.read()<<8|Wire.read())/average;
+    gyz+= (Wire.read()<<8|Wire.read())/average;
+  }
 }
 
 void encodeData(byte *arr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
