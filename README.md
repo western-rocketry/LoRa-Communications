@@ -11,9 +11,12 @@ Dest  Send  DataID  MsgID    Millis    MsgLen     Accel     ChkSum     Gyro    C
 0x45  0x57   00-FF  00-FF  0-FFFFFFFF  00-F6    3x2 Bytes   0-255   3x2 Bytes   0-255   2 Bytes
 ```
 ```
-   1           1           1        4         4          4        4      4      12     
-GPS Fix   Satellite#  GPS Fails  Altitude  Latitude  Longitude  Speed  Angle   PDIP
- 0 | 1       0-255      0-255     float     float      float    float  float  3xfloat
+   1           1           1        4        1        4          4         1      4      4       1      12        1
+GPS Fix   Satellite#  GPS Fails  Altitude  ChkSum  Latitude  Longitude  ChkSum  Speed  Angle  ChkSum   PDIP    ChkSum
+ 0 | 1       0-255      0-255     float     0-255   float      float     0-255  float  float   0-255  3xfloat   0-255
+```
+```
+##Todo, Temperature readings
 ```
 **Dest:** Destination Address
 
