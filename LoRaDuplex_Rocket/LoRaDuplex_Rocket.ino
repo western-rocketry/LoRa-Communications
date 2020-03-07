@@ -37,21 +37,21 @@ void setup() {
   if (!LoRa.begin(915E6)) {                 // initialize at 915 MHz
     Serial.println(F("LoRa initialization failed, retrying...\n\n")); delay(5000);
     setup();
-  } Serial.println(F("LoRa initialized successfully"));
-  Initialize gyro/accelerometer
+  } Serial.println(F("LoRa initialized"));
+  //Initialize gyro/accelerometer
   Wire.begin();
   Wire.setClock(400000);
   Wire.beginTransmission(MPU);
   Wire.write(0x6B); 
   Wire.write(0x00);    
   Wire.endTransmission(true);
+  Serial.println("Gyro initialized");
   //Initialize GPS
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
   GPS.sendCommand(PGCMD_ANTENNA);
-  delay(1000);
-  mySerial.println(PMTK_Q_RELEASE);
+  Serial.println("GPS initialized");
 }
 
 void loop() {
@@ -85,7 +85,11 @@ void loop() {
       sendMessage(2, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       //Serial monitoring
       //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
+      printTime();
       Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
+      Serial.println("Fix: " + String(GPS.fix));
+      
+      
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }
@@ -102,9 +106,11 @@ byte gyroFunctional(){
 }
 
 byte gpsFunctional(){
-  if (GPS.newNMEAreceived()) {
-    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-      gpsFunctional();// we can fail to parse a sentence in which case we should just wait for another
+  for(int i=0;i<100;i++){
+    char c = GPS.read();
+    if (GPS.newNMEAreceived()){ 
+      if (!GPS.parse(GPS.lastNMEA())) continue;   // this also sets the newNMEAreceived() flag to false
+    }
   }
   Serial.print("\nTime: ");
   if (GPS.hour < 10) { Serial.print('0'); }
@@ -112,21 +118,15 @@ byte gpsFunctional(){
   if (GPS.minute < 10) { Serial.print('0'); }
   Serial.print(GPS.minute, DEC); Serial.print(':');
   if (GPS.seconds < 10) { Serial.print('0'); }
-  Serial.print(GPS.seconds, DEC); Serial.print('.');
-  if (GPS.milliseconds < 10) {
-    Serial.print("00");
-  } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
-    Serial.print("0");
-  }
-  if(GPS.seconds==GPS.milliseconds && GPS.milliseconds==0){
-    Serial.println(String(GPS.seconds) + " " + String(GPS.milliseconds));
-    if((byte)GPS.fix==1){
-      return(1); //no Signal
-    }else{
-      return(0); //no time movement and no signal
-    } 
+  Serial.println(GPS.seconds, DEC);
+  if(GPS.seconds==GPS.minute && GPS.seconds==0){
+    return(0);
   }else{
-    return(255);
+    if((byte)GPS.fix==1){
+      return(255); //no Signal
+    }else{
+      return(254); //GPS good but no signal
+    } 
   }
 }
 
@@ -173,4 +173,20 @@ void onReceive(int packetSize) {
 //  Serial.print("Signal Strength: " + String((LoRa.packetRssi()/-120)*100) + "% ");
 //  Serial.println("Signal Noise: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
 //  Serial.println();
+}
+
+void printTime(){
+  for(int i=0;i<100;i++){
+    char c = GPS.read();
+    if (GPS.newNMEAreceived()){ 
+      if (!GPS.parse(GPS.lastNMEA())) continue;   // this also sets the newNMEAreceived() flag to false
+    }
+  }
+  Serial.print("\nTime: ");
+  if (GPS.hour < 10) { Serial.print('0'); }
+  Serial.print(GPS.hour, DEC); Serial.print(':');
+  if (GPS.minute < 10) { Serial.print('0'); }
+  Serial.print(GPS.minute, DEC); Serial.print(':');
+  if (GPS.seconds < 10) { Serial.print('0'); }
+  Serial.println(GPS.seconds, DEC); 
 }

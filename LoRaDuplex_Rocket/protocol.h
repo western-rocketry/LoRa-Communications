@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Adafruit_GPS.h>
 
 void parseData8(byte &val, byte b1);
 void parseData16(int16_t &val, byte b1, byte b2);
