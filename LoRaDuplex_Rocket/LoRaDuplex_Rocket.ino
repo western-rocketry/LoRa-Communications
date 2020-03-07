@@ -113,6 +113,7 @@ void loop() {
         pdop.num = GPS.PDOP;
         GPSSat = (byte)GPS.satellites;
       }else{
+        Serial.println("GPS Fix Failed");
         GPSFail++;
         GPSSat = 0;
         gpsalt.num,gpslat.num,gpslong.num,gpsspeed.num,gpsangle.num,vdop.num,hdop.num,pdop.num = 0;
@@ -127,7 +128,8 @@ void loop() {
       //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
       printTime();
       Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
-      Serial.println("Fix: " + String(GPS.fix));
+      Serial.println("Fix: " + String(GPS.fix)+" \tSats: " +String(GPSSat)+" \tFails"+String(GPSFail));
+      Serial.println(String(gpsalt.num)+" "+String(gpslat.num)+" "+String(gpslong.num)+" "+String(gpsspeed.num)+" "+String(gpsangle.num)+" "+String(vdop.num)+" "+String(hdop.num)+" "+String(pdop.num));
       
       
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
