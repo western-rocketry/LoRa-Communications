@@ -6,6 +6,7 @@ Parses data from thermocouples and i2c sensor modules and sends them over LoRa t
 
 ### Raw Frame Format:
 Frame beginning + Gyroscope/Accelerometer Data
+
 Size: 25 bytes
 ```
  1     1       1      1        4         1          6         1         6        1         2
@@ -79,6 +80,17 @@ The LoRa system will implement a simple 8-bit checksum after each module data. I
 
 
 ## Ground Module
+### Init mode
+Depending on what modules are connected properly/functional, the first few seconds of the rocket will send out data on what modules are operational and what modules are not operational. This data will be dependant on the module type, and what error messages there are. The code rules are as follows:
+- 0: Not operational
+- 254: Operational but no singal
+- 255: Fully functional
+```
+Accel: 0
+GPS: 0
+```
+
+### Launch/Normal Mode
 The ground module will be responsible for recieving data sent by the rocket, as well as calculating signal strength and quality. The ground module will also be calculating the checksum to ensure the data from the rocket is correct. The data will still be passed if any data management can decide to discard specific or the entire data set. Any failed checksum will output the following as an example:
 ```
 GyX ###
@@ -134,6 +146,8 @@ TEMP4 ###
 RSSI ###
 SNR ###
 ```
+### Alert Mode
+
 ```
 Mode Alert
 Time ###
