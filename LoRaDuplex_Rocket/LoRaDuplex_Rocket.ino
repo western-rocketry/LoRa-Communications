@@ -28,6 +28,10 @@ byte mode = 0;
 long lastSendTime = 0;        // last send time
 int16_t AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ = 0;
 float realTemp;
+byte GPSFail,GPSSat = 0;
+floatunion_t gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop;
+
+
 
 void setup() {
   Serial.begin(115200);               
@@ -71,18 +75,54 @@ void loop() {
       }
       break;
     }case 1:{ 
-      addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);
+      addDataGyro(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);
+      //GPS
+      if(GPS.fix==1){
+        gpsalt.num = GPS.altitude;
+        gpslat.num = GPS.latitudeDegrees;
+        gpslong.num = GPS.longitudeDegrees;
+        gpsspeed.num = GPS.speed;
+        gpsangle.num = GPS.angle;
+        vdop.num = GPS.VDOP;
+        hdop.num = GPS.HDOP;
+        pdop.num = GPS.PDOP;
+        GPSSat = (byte)GPS.satellites;
+      }else{
+        GPSFail++;
+        GPSSat = 0;
+        gpsalt.num,gpslat.num,gpslong.num,gpsspeed.num,gpsangle.num,vdop.num,hdop.num,pdop.num = 0;
+      }
+      //Send Data
       byte arr[16];
-      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ);
+      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ,GPS.fix,GPSSat,GPSFail,gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop);
       sendMessage(1, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }case 2:{ 
       //Accelerometer & Gyroscope
-      addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ, AVERAGE);
-      byte arr[16];
-      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ);
+      addDataGyro(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ, AVERAGE);
+      //GPS
+      if(GPS.fix==1){
+        gpsalt.num = GPS.altitude;
+        gpslat.num = GPS.latitudeDegrees;
+        gpslong.num = GPS.longitudeDegrees;
+        gpsspeed.num = GPS.speed;
+        gpsangle.num = GPS.angle;
+        vdop.num = GPS.VDOP;
+        hdop.num = GPS.HDOP;
+        pdop.num = GPS.PDOP;
+        GPSSat = (byte)GPS.satellites;
+      }else{
+        GPSFail++;
+        GPSSat = 0;
+        gpsalt.num,gpslat.num,gpslong.num,gpsspeed.num,gpsangle.num,vdop.num,hdop.num,pdop.num = 0;
+      }
+      //Send Data
+      byte arr[55];
+      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ,GPS.fix,GPSSat,GPSFail,gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop);
       sendMessage(2, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
+
+      
       //Serial monitoring
       //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
       printTime();
@@ -99,7 +139,7 @@ void loop() {
 }
 
 byte gyroFunctional(){
-    addData(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);    
+    addDataGyro(MPU, AAcX, AAcY, AAcZ, ATmp, AGyX, AGyY, AGyZ);    
     if(AAcX==-1 && AAcY==-1 && AAcZ==-1) return(0);
     AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
     return(255);

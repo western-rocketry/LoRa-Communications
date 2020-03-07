@@ -33,10 +33,10 @@ void printByte(byte b){
   for(int i = 7; i >= 0; i--)
     Serial.print(bitRead(b,i));
 }
-void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
-  addData(addr,acx,acy,acz,temp,gyx,gyy,gyz,1.0);  
+void addDataGyro(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
+  addDataGyro(addr,acx,acy,acz,temp,gyx,gyy,gyz,1.0);  
 }
-void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz, uint8_t average){
+void addDataGyro(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz, uint8_t average){
   for(int i=0;i<average;i++){  
     Wire.beginTransmission(addr);
     Wire.write(0x3B);  
@@ -52,7 +52,9 @@ void addData(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp,
   }
 }
 
-void encodeData(byte *arr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz){
+void encodeData(byte *arr, int16_t acx, int16_t acy, int16_t acz, int16_t temp, int16_t gyx, int16_t gyy, int16_t gyz, 
+                byte gpsfix, byte gpsnum, byte gpsfail, floatunion_t gpsalt, floatunion_t gpslat, floatunion_t gpslong, 
+                floatunion_t gpsspeed, floatunion_t gpsangle, floatunion_t vdop, floatunion_t hdop, floatunion_t pdop){
   arr[0] = char(acx>>8); 
   arr[1] = char(acx%256);
   arr[2] = char(acy>>8);
@@ -69,6 +71,46 @@ void encodeData(byte *arr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &te
   arr[13] = char((gyx+gyy+gyz)%256); //checksum
   arr[14] = char(temp>>8);
   arr[15] = char(temp%256);
+  //GPS Data
+  arr[16] = char(gpsfix);
+  arr[17] = char(gpsnum);
+  arr[18] = char(gpsfail);
+  arr[19] = char(gpsalt.bytes[0]);
+  arr[20] = char(gpsalt.bytes[1]);
+  arr[21] = char(gpsalt.bytes[2]);
+  arr[22] = char(gpsalt.bytes[3]);
+  arr[23] = char((arr[16]+arr[17]+arr[18]+arr[19]+arr[20]+arr[21]+arr[22])%256);//checksum
+  arr[24] = char(gpslat.bytes[0]);
+  arr[25] = char(gpslat.bytes[1]);
+  arr[26] = char(gpslat.bytes[2]);
+  arr[27] = char(gpslat.bytes[3]);
+  arr[28] = char(gpslong.bytes[0]);
+  arr[29] = char(gpslong.bytes[1]);
+  arr[30] = char(gpslong.bytes[2]);
+  arr[31] = char(gpslong.bytes[3]);
+  arr[32] = char((arr[24]+arr[25]+arr[26]+arr[27]+arr[28]+arr[29]+arr[30]+arr[31])%256);
+  arr[33] = char(gpsspeed.bytes[0]);
+  arr[34] = char(gpsspeed.bytes[1]);
+  arr[35] = char(gpsspeed.bytes[2]);
+  arr[36] = char(gpsspeed.bytes[3]);
+  arr[37] = char(gpsangle.bytes[0]);
+  arr[38] = char(gpsangle.bytes[1]);
+  arr[39] = char(gpsangle.bytes[2]);
+  arr[40] = char(gpsangle.bytes[3]);
+  arr[41] = char((arr[33]+arr[34]+arr[35]+arr[36]+arr[37]+arr[38]+arr[39]+arr[40])%256);
+  arr[42] = char(vdop.bytes[0]);
+  arr[43] = char(vdop.bytes[1]);
+  arr[44] = char(vdop.bytes[2]);
+  arr[45] = char(vdop.bytes[3]);
+  arr[46] = char(hdop.bytes[0]);
+  arr[47] = char(hdop.bytes[1]);
+  arr[48] = char(hdop.bytes[2]);
+  arr[49] = char(hdop.bytes[3]);
+  arr[50] = char(pdop.bytes[0]);
+  arr[51] = char(pdop.bytes[1]);
+  arr[52] = char(pdop.bytes[2]);
+  arr[53] = char(pdop.bytes[3]);
+  arr[54] = char((arr[42]+arr[43]+arr[44]+arr[45]+arr[46]+arr[47]+arr[48]+arr[49]+arr[50]+arr[51]+arr[52]+arr[53])%256);
 }
 
 
