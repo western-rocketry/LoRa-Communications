@@ -62,16 +62,7 @@ GPS Fix   Satellite#  GPS Fails  Altitude  Latitude  Longitude  Speed  Angle   P
 ### Gyroscope/Accelerometer
 Raw packet format will be a string of 14 bytes. Each data value will have the length of 2 bytes, taking up 12 bytes for the total gyro/accelerometer data, and 2 bytes for the checksum. Each 2 bytes will represent a signed 16-bit integer value, in the order of GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ. As of currently, the Gyroscope and Accelerometer is getting the average of 127 samples, which may not pick up sudden moments of acceleration such as take-off, and only serve to normalize the data. This value is subject to change in the future after further testing. If the module failes to initialize, it will send an error message as a value over LoRa containing "0x00", which will be sent to the serial monitor as "Gyroscope/Accelerometer initializtion failed". If initialization succeeds, "0xFF" will be sent instead
 
-The following data will be sent to the Serial Monitor as such:
-```
-GyX ###
-GyY ###
-GyZ ###
-AcX ###
-AcY ###
-AcZ ###
-...
-```
+
 
 ### Checksum
 The LoRa system will implement a simple 8-bit checksum after each module data. If the checksum fails, the data will be outputted to the serial monitor as "CS Failed"
@@ -116,13 +107,17 @@ AcY ###
 AcZ ###
 ALT ###
 TEMP ###
+GPSFix ###
+GPSSat ###
+GPSFail ###
 GPSAlt ###
 GPSLat ###
 GPSLong ###
 GPSSpeed ###
 GPSAngle ###
-GPSDoP ###
-GPSFails ###
+GPSVDoP ###
+GPSHDoP ###
+GPSPDoP ###
 TEMP1 ###
 TEMP2 ###
 TEMP3 ###
