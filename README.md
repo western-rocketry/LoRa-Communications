@@ -6,9 +6,14 @@ Parses data from thermocouples and i2c sensor modules and sends them over LoRa t
 
 ### Raw Frame Format:
 ```
-  1    1       1      1        4         1          6         1         6        1         2
+ 1     1       1      1        4         1          6         1         6        1         2
 Dest  Send  DataID  MsgID    Millis    MsgLen     Accel     ChkSum     Gyro    ChkSum    Temp1
-0x45  0x57   00-FF   00-FF  0-FFFFFFFF  00-F6   3x2 Bytes   0-255   3x2 Bytes   0-255   2 Bytes
+0x45  0x57   00-FF  00-FF  0-FFFFFFFF  00-F6    3x2 Bytes   0-255   3x2 Bytes   0-255   2 Bytes
+```
+```
+   1           1           1        4         4          4        4      4      12     
+GPS Fix   Satellite#  GPS Fails  Altitude  Latitude  Longitude  Speed  Angle   PDIP
+ 0 | 1       0-255      0-255     float     float      float    float  float  3xfloat
 ```
 **Dest:** Destination Address
 
@@ -28,9 +33,31 @@ Dest  Send  DataID  MsgID    Millis    MsgLen     Accel     ChkSum     Gyro    C
   
 **MessageID:** A count from 0-255, then overflow. Used to check if any frames were dropped or missing
 
-**Millis:** Time in which the rocket has sent the data as a 32-bit long.
+**Millis:** Time in which the rocket has sent the data as a 32-bit long
 
 **MsgLen:** Message length
+
+**Accel:** Accelerometer
+
+**Gyro:** Gyroscope
+
+**CHKSUM:** Addition checksum
+
+**GPS Fix:** Returns 1 if able to access satellite data, otherwise 0
+
+**Satellite#:** Number of satellites used to determine the GPS position
+
+**GPS Fails:** How many times the GPS module fails to parse data from satellites
+
+**Latitude/Longitude:** Self-explanitory, position of rocket in decimal degrees (xx.xxx, xx.xxx)
+
+**Altitude:** Uses the [WGS84 Altitude](https://en.wikipedia.org/wiki/World_Geodetic_System), where the earth is defined as an ellipsoid 
+
+**Speed:** In knots, how far the rocket is moving. Untested if this is horizontal movement or net movement
+
+**Angle:** Angle the rocket is facing in comparison to true north
+
+**PDIP:** Consisting of vertical, horizontal, and positional dilution of percision.
   
 ### Gyroscope/Accelerometer
 Raw packet format will be a string of 14 bytes. Each data value will have the length of 2 bytes, taking up 12 bytes for the total gyro/accelerometer data, and 2 bytes for the checksum. Each 2 bytes will represent a signed 16-bit integer value, in the order of GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ. As of currently, the Gyroscope and Accelerometer is getting the average of 127 samples, which may not pick up sudden moments of acceleration such as take-off, and only serve to normalize the data. This value is subject to change in the future after further testing. If the module failes to initialize, it will send an error message as a value over LoRa containing "0x00", which will be sent to the serial monitor as "Gyroscope/Accelerometer initializtion failed". If initialization succeeds, "0xFF" will be sent instead
@@ -88,7 +115,6 @@ AcX ###
 AcY ###
 AcZ ###
 ALT ###
-PRESS ###
 TEMP ###
 GPSAlt ###
 GPSLat ###
