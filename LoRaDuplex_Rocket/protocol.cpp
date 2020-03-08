@@ -54,7 +54,8 @@ void addDataGyro(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &t
 
 void encodeData(byte *arr, int16_t acx, int16_t acy, int16_t acz, int16_t temp, int16_t gyx, int16_t gyy, int16_t gyz, 
                 byte gpsfix, byte gpsnum, byte gpsfail, floatunion_t gpsalt, floatunion_t gpslat, floatunion_t gpslong, 
-                floatunion_t gpsspeed, floatunion_t gpsangle, floatunion_t vdop, floatunion_t hdop, floatunion_t pdop){
+                floatunion_t gpsspeed, floatunion_t gpsangle, floatunion_t vdop, floatunion_t hdop, floatunion_t pdop,
+                floatunion_t hightemp){
   arr[0] = char(acx>>8); 
   arr[1] = char(acx%256);
   arr[2] = char(acy>>8);
@@ -111,8 +112,16 @@ void encodeData(byte *arr, int16_t acx, int16_t acy, int16_t acz, int16_t temp, 
   arr[52] = char(pdop.bytes[2]);
   arr[53] = char(pdop.bytes[3]);
   arr[54] = char((arr[42]+arr[43]+arr[44]+arr[45]+arr[46]+arr[47]+arr[48]+arr[49]+arr[50]+arr[51]+arr[52]+arr[53])%256);
+  arr[55] = char(hightemp.bytes[0]);
+  arr[56] = char(hightemp.bytes[1]);
+  arr[57] = char(hightemp.bytes[2]);
+  arr[58] = char(hightemp.bytes[3]);
 }
 
+float getTemp(DallasTemperature &sensor){
+  sensor.requestTemperatures();
+  return(sensor.getTempCByIndex(0));
+}
 
 void checkData(String message, int AAcX, int AAcY, int AAcZ, int AGyX, int AGyY, int AGyZ){
       //decode data

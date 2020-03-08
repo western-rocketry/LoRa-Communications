@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_GPS.h>
+#include <DallasTemperature.h>  
 
 typedef union{
   float num;
@@ -13,5 +14,6 @@ void printInt(int b);
 void printByte(byte b);
 void addDataGyro(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz);
 void addDataGyro(byte addr, int16_t &acx, int16_t &acy, int16_t &acz, int16_t &temp, int16_t &gyx, int16_t &gyy, int16_t &gyz, uint8_t average);
-void encodeData(byte *arr, int16_t acx, int16_t acy, int16_t acz, int16_t temp, int16_t gyx, int16_t gyy, int16_t gyz, byte gpsfix, byte gpsnum, byte gpsfail, floatunion_t gpsalt, floatunion_t gpslat, floatunion_t gpslong, floatunion_t gpsspeed, floatunion_t gpsangle, floatunion_t vdop, floatunion_t hdop, floatunion_t pdop);
+void encodeData(byte *arr, int16_t acx, int16_t acy, int16_t acz, int16_t temp, int16_t gyx, int16_t gyy, int16_t gyz, byte gpsfix, byte gpsnum, byte gpsfail, floatunion_t gpsalt, floatunion_t gpslat, floatunion_t gpslong, floatunion_t gpsspeed, floatunion_t gpsangle, floatunion_t vdop, floatunion_t hdop, floatunion_t pdop, floatunion_t hightemp);
 void checkData(String message, int AAcX, int AAcY, int AAcZ, int AGyX, int AGyY, int AGyZ);
+float getTemp(DallasTemperature &sensor);

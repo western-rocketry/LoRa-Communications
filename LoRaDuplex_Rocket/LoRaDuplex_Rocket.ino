@@ -1,22 +1,26 @@
 #include <SPI.h>              // include libraries for LoRa Communications
 #include <LoRa.h>             //
-#include <Wire.h>                 //Sensor Data Transmission
-#include <Adafruit_GPS.h>
+#include <Wire.h>             //I2C Sensor Data Transmission
+#include <Adafruit_GPS.h>       //GPS Library
 #include <SoftwareSerial.h>     //GPS requires a serial port
+#include <OneWire.h>            //Temperature Sensor
+#include <DallasTemperature.h>  //Temperature Sensor
 #include "protocol.h"
 
 //Take this many samples to average out. Higher values will lower resolution, but give smoother data
 #define AVERAGE 127
-#define PREPLENGTH 15000      //Duration in which the rocket is in prep mode before switching to normal
+#define PREPLENGTH 15000      //Duration (in ms) in which the rocket is in prep mode before switching to normal
 
 #define csPin 10              // LoRa radio chip select
 #define resetPin 6            // LoRa radio reset
 #define irqPin 1              // change for your board; must be a hardware interrupt pin
-#define MPU 0x68
+#define MPU 0x68              // LoRa Address
+#define ONE_WIRE_BUS 5        // Temperature Sensor pin
 #define localAddress 0x57     // address of this device (ASCII W)
 #define destination 0x45      // destination to send to (ASCII E)
-#define GPSECHO  true
 
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensor1(&oneWire);
 SoftwareSerial mySerial(4, 3);
 Adafruit_GPS GPS(&mySerial);
 
@@ -27,10 +31,10 @@ byte msgCount = 0;            // count of outgoing messages
 byte mode = 0;
 long lastSendTime = 0;        // last send time
 int16_t AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ = 0;
-float realTemp;
-byte GPSFail,GPSSat = 0;
-floatunion_t gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop;
-
+float realTemp;               //Despite the name, the temperature module on the gryo is very inaccurate and imprecise
+byte GPSFail,GPSSat = 0;      //gps data
+floatunion_t gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop; //gps data
+floatunion_t highTemp;               //High temperature sensor
 
 
 void setup() {
@@ -56,6 +60,8 @@ void setup() {
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
   GPS.sendCommand(PGCMD_ANTENNA);
   Serial.println("GPS initialized");
+  //Initialize Temperature Sensor
+  sensor1.begin();
 }
 
 void loop() {
@@ -88,14 +94,17 @@ void loop() {
         pdop.num = GPS.PDOP;
         GPSSat = (byte)GPS.satellites;
       }else{
+        Serial.println("GPS Fix Failed");
         GPSFail++;
         GPSSat = 0;
         gpsalt.num,gpslat.num,gpslong.num,gpsspeed.num,gpsangle.num,vdop.num,hdop.num,pdop.num = 0;
       }
+      //Temp sensor
+      highTemp.num = getTemp(sensor1);
       //Send Data
-      byte arr[16];
-      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ,GPS.fix,GPSSat,GPSFail,gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop);
-      sendMessage(1, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
+      byte arr[59];
+      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ,GPS.fix,GPSSat,GPSFail,gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop,highTemp);
+      sendMessage(mode, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
     }case 2:{ 
@@ -118,14 +127,14 @@ void loop() {
         GPSSat = 0;
         gpsalt.num,gpslat.num,gpslong.num,gpsspeed.num,gpsangle.num,vdop.num,hdop.num,pdop.num = 0;
       }
+      //Temp sensor
+      highTemp.num = getTemp(sensor1);
       //Send Data
-      byte arr[55];
-      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ,GPS.fix,GPSSat,GPSFail,gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop);
-      sendMessage(2, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
-
-      
-      //Serial monitoring
-      //Serial.println(String(AAcX) +"\t"+ String(AAcY) +"\t"+ String(AAcZ));
+      byte arr[59];
+      encodeData(arr,AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ,GPS.fix,GPSSat,GPSFail,gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop,highTemp);
+      sendMessage(mode, arr, sizeof(arr));                   //max 255 bytes, 4 reserved for frame
+   
+      //Debug
       printTime();
       Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
       Serial.println("Fix: " + String(GPS.fix)+" \tSats: " +String(GPSSat)+" \tFails"+String(GPSFail));
