@@ -33,15 +33,15 @@ High Temp  ....
 
 **DataID:** Frame data, either will be in:
 
-  **[0x00] Preperation** - Gives output on the integrity and operation of all sensors and pre-flight checks. Will last 10 seconds before launch
+- **[0x00] Preperation** - Gives output on the integrity and operation of all sensors and pre-flight checks. Will last 10 seconds before launch
   
-  **[0x01] Launch** - Gives rapid sensor data. Will trigger when the accelerometer reaches a high threshold. Sends the data quickly without any normaization or averaging. Will last 10 seconds after threshold is reached
+- **[0x01] Launch** - Gives rapid sensor data. Will trigger when the accelerometer reaches a high threshold. Sends the data quickly without any normaization or averaging. Will last 10 seconds after threshold is reached
   
-  **[0x02] Normal** - Default setting. Will give averaged samples of all sensors, as the data obtained from sensors can be done so much quicker than sending them all over LoRa. Will give more accurate results
+- **[0x02] Normal** - Default setting. Will give averaged samples of all sensors, as the data obtained from sensors can be done so much quicker than sending them all over LoRa. Will give more accurate results
   
-  **[0xFE] ACK** - Acknowledgement of any data sent to the rocket
+- **[0xFE] ACK** - Acknowledgement of any data sent to the rocket
   
-  **[0xFF] Alert** - Failure of any component or irregularities in the trajectory
+- **[0xFF] Alert** - Failure of any component or irregularities in the trajectory
   
 **MessageID:** A count from 0-255, then overflow. Used to check if any frames were dropped or missing
 
