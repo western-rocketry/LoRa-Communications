@@ -129,22 +129,26 @@ Time ###
 GyX ###
 GyY ###
 GyZ ###
+-- CS FAIL?
 AcX ###
 AcY ###
 AcZ ###
-ALT ###
-TEMP ###
-GPSFix ###
-GPSSat ###
-GPSFail ###
-GPSAlt ###
-GPSLat ###
-GPSLong ###
-GPSSpeed ###
-GPSAngle ###
-GPSVDoP ###
-GPSHDoP ###
-GPSPDoP ###
+-- CS FAIL?
+Connection True | False
+Satellites ###
+Fails ###
+Altitude ###
+-- CS FAIL?
+Latitude ###
+Longitude ###
+-- CS FAIL?
+Speed (Knots) ###
+Angle from N ###
+-- CS FAIL?
+Vertical DoP ###
+Horizontal DoP ###
+Positional DoP ###
+-- CS FAIL?
 TEMP1 ###
 TEMP2 ###
 TEMP3 ###
