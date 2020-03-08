@@ -34,6 +34,13 @@ uint32_t parseTime(byte b1, byte b2, byte b3, byte b4){
   return(val);
 }
 
+void parseFloat32(floatunion_t &val, byte b1, byte b2, byte b3, byte b4){
+  val.bytes[0] = b1;
+  val.bytes[1] = b2;
+  val.bytes[2] = b3;
+  val.bytes[3] = b4;
+}
+
 void printInt(int b){
   for(int i = 15; i >= 0; i--)
     Serial.print(bitRead(b,i));

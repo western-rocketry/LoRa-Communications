@@ -14,7 +14,7 @@
 #define csPin 10              // LoRa radio chip select
 #define resetPin 6            // LoRa radio reset
 #define irqPin 1              // change for your board; must be a hardware interrupt pin
-#define MPU 0x68              // LoRa Address
+#define MPU 0x68              // LoRa MPU Address
 #define ONE_WIRE_BUS 5        // Temperature Sensor pin
 #define localAddress 0x57     // address of this device (ASCII W)
 #define destination 0x45      // destination to send to (ASCII E)
@@ -31,7 +31,6 @@ byte msgCount = 0;            // count of outgoing messages
 byte mode = 0;
 long lastSendTime = 0;        // last send time
 int16_t AAcX,AAcY,AAcZ,ATmp,AGyX,AGyY,AGyZ = 0;
-float realTemp;               //Despite the name, the temperature module on the gryo is very inaccurate and imprecise
 byte GPSFail,GPSSat = 0;      //gps data
 floatunion_t gpsalt,gpslat,gpslong,gpsspeed,gpsangle,vdop,hdop,pdop; //gps data
 floatunion_t highTemp;               //High temperature sensor

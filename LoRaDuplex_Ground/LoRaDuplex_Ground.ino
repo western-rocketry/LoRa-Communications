@@ -68,6 +68,11 @@ void onReceive(int packetSize){
       Serial.print("Message count id: "); Serial.println(count);
       Serial.println("Time " + String(rocketTime));
       #endif
+
+      //******************************************************************//
+      //                        Data Parsing                              //
+      //******************************************************************//
+      //Gyroscope and Accelerometer
       int16_t acx,acy,acz,gyx,gyy,gyz,tmp;
       byte chk0,chk1;
       parseData16(acx,msg[0],msg[1]);
@@ -79,11 +84,65 @@ void onReceive(int packetSize){
       parseData16(gyz,msg[11],msg[12]);
       parseData8(chk1,msg[13]);
       parseData16(tmp,msg[14],msg[15]);
+      //GPS
+      floatunion_t alt,lat,lon,knots,angle,vdop,hdop,pdop;
+      byte fix,num,fail,chk2,chk3,chk4,chk5;
+      parseData8(fix,msg[16]);
+      parseData8(num,msg[17]);
+      parseData8(fail,msg[18]);
+      parseFloat32(alt,msg[19],msg[20],msg[21],msg[22]);
+      parseData8(chk2,msg[23]);
+      parseFloat32(lat,msg[24],msg[25],msg[26],msg[27]);
+      parseFloat32(lon,msg[28],msg[29],msg[30],msg[31]);
+      parseData8(chk3,msg[32]);
+      parseFloat32(knots,msg[33],msg[34],msg[35],msg[36]);
+      parseFloat32(angle,msg[37],msg[38],msg[39],msg[40]);
+      parseData8(chk4,msg[41]);
+      parseFloat32(vdop,msg[42],msg[43],msg[44],msg[45]);
+      parseFloat32(hdop,msg[46],msg[47],msg[48],msg[49]);
+      parseFloat32(pdop,msg[50],msg[51],msg[52],msg[53]);
+      parseData8(chk5,msg[54]);
+      //Temp
+      floatunion_t temp1;
+      byte chk6;
+      parseFloat32(temp1,msg[55],msg[56],msg[57],msg[58]);
+
+
+      
       #ifdef PRINTTOSERIAL
-      Serial.println("GyX " + String(gyx) + "\nGyY " + String(gyy) + "\nGyZ " + String(gyz));
+      ///////////////////////////// Begin sending parsed Data ///////////////////////////////
+      //Gyro and Accelerometer
+      Serial.println("GyX " + String(gyx) + 
+                   "\nGyY " + String(gyy) + 
+                   "\nGyZ " + String(gyz));
       if(byte((acx+acy+acz)%256)!=byte(chk0)) Serial.println(F("CS FAILED - GYRO"));
-      Serial.println("AcX " + String(acx) + "\nAcY " + String(acy) + "\nAcZ " + String(acz));
+      Serial.println("AcX " + String(acx) + 
+                   "\nAcY " + String(acy) + 
+                   "\nAcZ " + String(acz));
       if(byte((gyx+gyy+gyz)%256)!=byte(chk1)) Serial.println(F("CS FAILED - ACCELEROMETER"));
+      //GPS
+      String gpsConnected = fix ? "True" : "False"; 
+      Serial.println("Connection: "+gpsConnected+
+                   "\nSatellites: "+String(num)+
+                   "\nFails: " + String(fail)+
+                   "\nAltitude: " + String(alt.num));  
+      if(byte((msg[16]+msg[17]+msg[18]+msg[19]+msg[20]+msg[21]+msg[22])%256)!=byte(chk2)) Serial.println(F("CS FAILED - GPS ALTITUDE/CONNECTION")); 
+      Serial.println("Latitude: "+String(lat.num)+
+                  "\nLongitude: "+String(lon.num));
+      if(byte((msg[24]+msg[25]+msg[26]+msg[27]+msg[28]+msg[29]+msg[30]+msg[31])%256)!=byte(chk3)) Serial.println(F("CS FAILED - GPS COORDINATES"));   
+      Serial.println("Speed (Knots): "+String(knots.num)+
+                   "\nAngle from N: "+String(angle.num));           
+      if(byte((msg[33]+msg[34]+msg[35]+msg[36]+msg[37]+msg[38]+msg[39]+msg[40])%256)!=byte(chk4)) Serial.println(F("CS FAILED - SPEED/ANGLE")); 
+      Serial.println("Vertical DoP: "+String(hdop.num)+
+                 "\nHorizontal DoP: "+String(vdop.num)+
+                 "\nPositional DoP: "+String(pdop.num));
+      if(byte((msg[42]+msg[43]+msg[44]+msg[45]+msg[46]+msg[47]+msg[48]+msg[49]+msg[50]+msg[51]+msg[52]+msg[53])%256)!=byte(chk5)) Serial.println(F("CS FAILED - DILUTION OF PERCISION")); 
+      Serial.println("Temp1: "+String(temp1.num));             
+
+
+
+
+      //RSSI/SNR Footer
       Serial.println("Temp " + String(float(tmp)/340.0 + 36.53));
       Serial.println("RSSI " + String((LoRa.packetRssi()/-120)*100) + "%");
       Serial.println("SNR: " + String(((LoRa.packetSnr()-10)/30)*100) + "%");
