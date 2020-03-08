@@ -21,9 +21,11 @@ GPS Fix   Satellite#  GPS Fails  Altitude  ChkSum  Latitude  Longitude  ChkSum  
  0 | 1       0-255      0-255     float     0-255   float      float     0-255  float  float   0-255  3xfloat   0-255
 ```
 Temperature Data
-Size: ?
+Size: 4+ bytes
 ```
-##Todo, Temperature readings
+    4       4
+High Temp  ....
+  float    ....
 ```
 **Dest:** Destination Address
 
@@ -68,6 +70,8 @@ Size: ?
 **Angle:** Angle the rocket is facing in comparison to true north
 
 **PDIP:** Consisting of vertical, horizontal, and positional dilution of percision.
+
+**High Temp:** High temperature sensor, returns float value in degrees celsius
   
 ### Gyroscope/Accelerometer
 Raw packet format will be a string of 14 bytes. Each data value will have the length of 2 bytes, taking up 12 bytes for the total gyro/accelerometer data, and 2 bytes for the checksum. Each 2 bytes will represent a signed 16-bit integer value, in the order of GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ. As of currently, the Gyroscope and Accelerometer is getting the average of 127 samples, which may not pick up sudden moments of acceleration such as take-off, and only serve to normalize the data. This value is subject to change in the future after further testing. If the module failes to initialize, it will send an error message as a value over LoRa containing "0x00", which will be sent to the serial monitor as "Gyroscope/Accelerometer initializtion failed". If initialization succeeds, "0xFF" will be sent instead
