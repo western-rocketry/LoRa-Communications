@@ -76,6 +76,8 @@ void encodeData(byte *arr, int16_t acx, int16_t acy, int16_t acz, int16_t temp, 
   arr[16] = char(gpsfix);
   arr[17] = char(gpsnum);
   arr[18] = char(gpsfail);
+  //Floats are given starting with the least significant byte, each starting with the most significant bit,
+  //Ex: 20948 -> 001010001 11010100 -> bytes[1]<<8 + bytes[0]
   arr[19] = char(gpsalt.bytes[0]);
   arr[20] = char(gpsalt.bytes[1]);
   arr[21] = char(gpsalt.bytes[2]);
