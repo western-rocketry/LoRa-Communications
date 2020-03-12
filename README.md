@@ -2,7 +2,7 @@
 A secondary communication system between the ground and flight system to provide sensor data from the rocket to the ground. The systems are capable of a full-duplex communication system, and will be implementing commands in the future.
 
 ## Flight Module
-Parses data from thermocouples and i2c sensor modules and sends them over LoRa to the ground. Creates the packet format, which is still to be determined, but as of currently, exists as a string. Packets can not exceed 255 bytes in length, so more than 1 type of frame may be designed to send other module information. Currently, the available sensor data is as follows:
+Parses data from thermocouples, a GPS module. and i2c sensor modules and sends them over LoRa to the ground. Packets can not exceed 255 bytes in length, so more than 1 type of frame may be designed to send other module information. Currently, the current frame design is as follows:
 
 ### Raw Frame Format:
 Frame beginning + Gyroscope/Accelerometer Data
@@ -79,10 +79,16 @@ High Temp  ....
 Raw packet format will be a string of 14 bytes. Each data value will have the length of 2 bytes, taking up 12 bytes for the total gyro/accelerometer data, and 2 bytes for the checksum. Each 2 bytes will represent a signed 16-bit integer value, in the order of GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ. As of currently, the Gyroscope and Accelerometer is getting the average of 127 samples, which may not pick up sudden moments of acceleration such as take-off, and only serve to normalize the data. This value is subject to change in the future after further testing. If the module failes to initialize, it will send an error message as a value over LoRa containing "0x00", which will be sent to the serial monitor as "Gyroscope/Accelerometer initializtion failed". If initialization succeeds, "0xFF" will be sent instead
 
 
-
 ### Checksum
 The LoRa system will implement a simple 8-bit checksum after each module data. If the checksum fails, the data will be outputted to the serial monitor as "CS Failed"
 
+
+### GPS
+Raw packet format will be 39 bytes due to the amount of float data that needs to be sent. Due to the importance of this data, 4 checksums are implemented in order to ensure the data sent is accurate. If the GPS does not get a fix signal, all values will return 0, and the GPS fail counter will increment.
+
+
+### Thermal Probes
+TEMP1 is a high-temperature sensor intended for use near the engine. Other thermal probes may be inserted around the rocket for temperature regualtion such as the nose cone. Currently, these sensors will not report any errors, and left to the data parser to recognize any irregularities in the temperature readings. 
 
 
 ## Ground Module
@@ -157,25 +163,17 @@ RSSI ###
 SNR ###
 ```
 ### Alert Mode
-
 ```
 Mode Alert
 Time ###
-Temp1 exceeded ### degrees 
+GPS Failed to get fix
 RSSI ###
 SNR ###
 ```
 ```
 Mode Alert
 Time ###
-Checksum failed on ### data values
-RSSI ###
-SNR ###
-```
-```
-Mode Alert
-Time ###
-Gyro pulled irregular data, check orientation
+Gyroscope/Accelerometer disconnected or no longer operational
 RSSI ###
 SNR ###
 ```
