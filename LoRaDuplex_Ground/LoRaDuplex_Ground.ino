@@ -51,7 +51,14 @@ void onReceive(int packetSize){
       #ifdef PRINTTOSERIAL
       Serial.println("\n\nMode Prep");
       Serial.println("Time " + String(rocketTime));
+      //Accelerometer/Gyro
       (msg[0]==255) ? Serial.println(F("Acc/Gyro OK")) : Serial.println("Acc/Gyro ERROR " + String(msg[0]));
+      //GPS
+      if(msg[1]==255) Serial.println(F("GPS OK"));
+      else if (msg[1]==254) Serial.println("GPS Fix Error");
+      else Serial.println("GPS ERROR: " + String(msg[0]));
+      //Temperature Sensor
+      (msg[2]==255) ? Serial.println(F("TEMP1 OK")) : Serial.println("TEMP1 ERROR " + String(msg[2]));
       #endif
       break;
     case 1:

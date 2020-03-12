@@ -72,10 +72,12 @@ void loop() {
       }else{
         byte accelOK = gyroFunctional();
         byte gpsOK = gpsFunctional(); 
-        byte message[] = {accelOK, gpsOK};
-        sendMessage(0, message, 2); //change to proper frame later
+        byte temp1OK = tempFunctional(sensor1);
+        byte message[] = {accelOK, gpsOK, temp1OK};
+        sendMessage(0, message, 3); //change to proper frame later
         Serial.println("Accel: " + String(accelOK));
         Serial.println("GPS: " + String(gpsOK));
+        Serial.println("Temp1: " + String(temp1OK));
         delay(1000);
       }
       break;
@@ -136,9 +138,9 @@ void loop() {
       //Debug
       printTime();
       Serial.println(String(AAcX) +" "+ String(AAcY) +" "+ String(AAcZ) +" " + String(AGyX) +" "+ String(AGyY) +" "+ String(AGyZ) );
-      Serial.println("Fix: " + String(GPS.fix)+" \tSats: " +String(GPSSat)+" \tFails"+String(GPSFail));
+      Serial.println("Fix: " + String(GPS.fix)+" \tSats: " +String(GPSSat)+" \tFails "+String(GPSFail));
       Serial.println(String(gpsalt.num)+" "+String(gpslat.num)+" "+String(gpslong.num)+" "+String(gpsspeed.num)+" "+String(gpsangle.num)+" "+String(vdop.num)+" "+String(hdop.num)+" "+String(pdop.num));
-      
+      Serial.println("Temp:" + String(highTemp.num));
       
       AAcX = AAcY = AAcZ = ATmp = AGyX = AGyY = AGyZ = 0;
       break;
@@ -177,6 +179,14 @@ byte gpsFunctional(){
     }else{
       return(254); //GPS good but no signal
     } 
+  }
+}
+
+byte tempFunctional(DallasTemperature sensor){
+  if(getTemp(sensor1)==-127){
+    return(0);
+  }else{
+    return(255);
   }
 }
 
